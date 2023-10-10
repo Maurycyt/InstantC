@@ -5,3 +5,8 @@ target/
 
 ## sbt ##
 /.bsp/
+
+## misc ##
+dependencies-classpath.cp
+insc_jvm
+insc_llvm
