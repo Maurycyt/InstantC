@@ -2,14 +2,14 @@ MAIN_CLASSPATH=target/scala-3.3.1/classes/
 INCLUDE_CLASSPATH=-cp ${MAIN_CLASSPATH} -cp `cat dependencies-classpath.cp`
 SBT_FLAGS=-Dsbt.io.implicit.relative.glob.conversion=allow
 SBT=sbt ${SBT_FLAGS}
-MAIN_ARGS=
+MAIN_ARGS= # To be supplied by the calling script
 
-target/scala-3.3.1/classes/main.class:
+${MAIN_CLASSPATH}main.class:
 	make build
 
 .PHONY: run
 run: ${MAIN_CLASSPATH}main.class
-	scala ${INCLUDE_CLASSPATH} main ${MAIN_ARGS}
+	-scala ${INCLUDE_CLASSPATH} main ${MAIN_ARGS}
 
 .PHONY: build
 build: build.sbt
