@@ -31,8 +31,7 @@ object Lerser {
 		val pc: instantParser.Start_ProgramContext = p.start_Program
 		val ast: Program = pc.result
 		
-		println("Parsed:")
-		PrettyPrinter.show(ast)
+		println(s"Parsed:\n${PrettyPrinter.show(ast)}")
 		ast
 	}
 }

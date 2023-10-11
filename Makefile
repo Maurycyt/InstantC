@@ -14,8 +14,11 @@ run: ${MAIN_CLASSPATH}main.class
 .PHONY: build
 build: build.sbt
 	${SBT} compile
-	chmod +x insc_jvm insc_llvm
+	@chmod +x insc_jvm insc_llvm
 
 .PHONY: clean
 clean:
-	rm -rf target project/target project/project/target src/grammar/Makefile src/grammar/instant dependencies-classpath.cp insc_jvm insc_llvm
+	rm -rf target project/target project/project/target
+	rm -rf src/grammar/Makefile src/grammar/instant
+	rm -rf dependencies-classpath.cp insc_jvm insc_llvm
+	rm -rf $(addprefix src/test/resources/*/*.,ll bc j class)

@@ -22,10 +22,8 @@ def main(target: String, inputPathString: String): Unit = {
 
 	try {
 		val ast = Lerser.lerse(inputPathString)
-		// Take the second-to-last filename component, or the last one.
-		val fileBaseName = inputPathString.split('.').reverse.take(2).last
-		println(fileBaseName)
-		targetToBackend(target).compile(ast, fileBaseName)
+		val fileName = inputPathString.take(((x: Int) => if x > 0 then x else inputPathString.length)(inputPathString.lastIndexOf('.')))
+		targetToBackend(target).compile(ast, fileName)
 	} catch {
 		case e: java.nio.file.NoSuchFileException =>
 			exitWithError(s"File does not exist: '${e.getFile}'")
