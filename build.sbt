@@ -27,7 +27,9 @@ lazy val root = (project in file("."))
 			val cachedFunction = FileFunction.cached(
 				streams.value.cacheDirectory / "grammar"
 			) { (in: Set[File]) =>
-				Process("bnfc -m --java-antlr src/grammar/Instant.cf -o src/grammar").!
+				val BNFCPaths = List("bnfc", "/home/students/inf/PUBLIC/MRJP/bin/bnfc")
+				val validBNFCPaths = BNFCPaths.filter(BNFCPath => Process(Seq("which", BNFCPath)).! == 0)
+				Process(s"${validBNFCPaths.head} -m --java-antlr src/grammar/Instant.cf -o src/grammar").!
 				Process("make -C src/grammar", None, "CLASSPATH" -> extraClasspath).!
 				IO.write(Path("dependencies-classpath.cp").asFile, extraClasspath)
 
