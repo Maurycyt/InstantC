@@ -39,7 +39,7 @@ object Backend extends backends.Backend {
 			fileWriter.close()
 		}
 		println(s"Generated: $fileBasePath.j")
-		if (fileDirectory.nonEmpty) { // As Titan from "Invincible" once said: this some bullshit
+		if (fileDirectory.nonEmpty) { // WHYYY
 			scala.sys.process.Process(Seq("java", "-jar", "lib/jasmin.jar", "-d", fileDirectory, s"$fileBasePath.j")).!
 		} else {
 			scala.sys.process.Process(Seq("java", "-jar", "lib/jasmin.jar", s"$fileBasePath.j")).!
