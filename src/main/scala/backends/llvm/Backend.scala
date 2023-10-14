@@ -4,7 +4,7 @@ import instant.Absyn.*
 
 import java.io.{File, FileWriter}
 
-case class LLVMFileWriter(fileWriter: FileWriter, indent: Int) {
+case class LLVMFileWriter(fileWriter: FileWriter) {
 	def writeLine(line: String): Unit = {
 		fileWriter.write("\t\t")
 		fileWriter.write(line)
@@ -17,7 +17,7 @@ case class LLVMFileWriter(fileWriter: FileWriter, indent: Int) {
 object Backend extends backends.Backend {
 	override def compile(program: Program, fileName: String): Unit = {
 		val fileWriter: FileWriter = new FileWriter(new File(s"$fileName.ll"))
-		val mnemonicFileWriter = LLVMFileWriter(fileWriter, 2)
+		val mnemonicFileWriter = LLVMFileWriter(fileWriter)
 		try {
 			fileWriter.write(
 				s"""declare i32 @printf(i8*, ...)
@@ -52,11 +52,13 @@ object Backend extends backends.Backend {
 	private def compile(statement: Stmt, context: Context, fileWriter: LLVMFileWriter): Context = statement match {
 		case ass: SAss =>
 			val contextAfterExpression = compile(ass.exp_, context, fileWriter)
-			contextAfterExpression.pushVariable(ass.ident_, contextAfterExpression.peekOperand).popOperand
+			val (operandSource, contextBeforeAssignment) = contextAfterExpression.popOperand
+			contextBeforeAssignment.pushVariable(ass.ident_, operandSource)
 		case exp: SExp =>
 			val contextAfterExpression = compile(exp.exp_, context, fileWriter)
-			fileWriter.writeLine(s"call i32 (i8*, ...) @printf(i8* %intFormatPtr, i32 ${contextAfterExpression.peekOperand})")
-			contextAfterExpression.popOperand
+			val (printedOperand, resultContext) = contextAfterExpression.popOperand
+			fileWriter.writeLine(s"call i32 (i8*, ...) @printf(i8* %intFormatPtr, i32 $printedOperand)")
+			resultContext
 	}
 
 	private type ExpOpType = ExpAdd | ExpSub | ExpMul | ExpDiv
@@ -76,10 +78,10 @@ object Backend extends backends.Backend {
 			val expOp = translateOperation(op)
 			val context1 = compile(expOp.exp1, context, fileWriter)
 			val context2 = compile(expOp.exp2, context1, fileWriter)
-			val operand2 = context2.peekOperand
-			val operand1 = context2.popOperand.peekOperand
-			val resultValueSource = context2.nextRegister
+			val (operand2, context3) = context2.popOperand
+			val (operand1, context4) = context3.popOperand
+			val resultValueSource = context4.nextRegister
 			fileWriter.writeLine(s"$resultValueSource = ${expOp.op} i32 $operand1, $operand2")
-			context2.popOperand.popOperand.pushOperand(resultValueSource)
+			context4.pushOperand(resultValueSource)
 	}
 }

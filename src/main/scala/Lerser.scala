@@ -1,4 +1,4 @@
-import instant.{instantLexer, instantParser, PrettyPrinter}
+import instant.{instantLexer, instantParser}
 import instant.Absyn.Program
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.ATNConfigSet
@@ -22,16 +22,13 @@ object Lerser {
 		override def reportAttemptingFullContext(recognizer: Parser, dfa: DFA, startIndex: Int, stopIndex: Int, conflictingAlts: util.BitSet, configs: ATNConfigSet): Unit = {}
 		override def reportContextSensitivity(recognizer: Parser, dfa: DFA, startIndex: Int, stopIndex: Int, prediction: Int, configs: ATNConfigSet): Unit = {}
 	}
-
+	
 	def lerse(filePathString: String): Program = {
 		val l: instantLexer = new instantLexer(CharStreams.fromFileName(filePathString))
 		l.addErrorListener(BNFCErrorListener)
 		val p: instantParser = new instantParser(CommonTokenStream(l))
 		p.addErrorListener(BNFCErrorListener)
 		val pc: instantParser.Start_ProgramContext = p.start_Program
-		val ast: Program = pc.result
-		
-		println(s"Parsed:\n${PrettyPrinter.show(ast)}")
-		ast
+		pc.result
 	}
 }

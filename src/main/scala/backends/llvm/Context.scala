@@ -31,6 +31,7 @@ case class Context(
 	operands: List[ValueSource],
 	lastRegisterIndex: Int
 ) {
+	// TODO incorporate variable names into register names
 	def nextRegister: Register = Register(s"%r$lastRegisterIndex")
 
 	def pushVariable(name: String, source: ValueSource): Context =
@@ -39,9 +40,7 @@ case class Context(
 	def pushOperand(source: ValueSource): Context =
 		Context(variables, source :: operands, lastRegisterIndex + (source match { case _: Register => 1; case _ => 0 }))
 
-	def peekOperand: ValueSource = operands.head
-
-	def popOperand: Context = copy(operands = operands.tail)
+	def popOperand: (ValueSource, Context) = (operands.head, copy(operands = operands.tail))
 }
 
 object Context {
