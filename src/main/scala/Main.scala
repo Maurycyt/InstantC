@@ -22,8 +22,8 @@ def main(target: String, inputPathString: String): Unit = {
 
 	try {
 		val ast = Lerser.lerse(inputPathString)
-		val fileName = inputPathString.take(((x: Int) => if x > 0 then x else inputPathString.length)(inputPathString.lastIndexOf('.')))
-		targetToBackend(target).compile(ast, fileName)
+		val fileBasePath = inputPathString.take(((x: Int) => if x > 0 then x else inputPathString.length)(inputPathString.lastIndexOf('.')))
+		targetToBackend(target).compile(ast, fileBasePath)
 	} catch {
 		case e: java.nio.file.NoSuchFileException =>
 			exitWithError(s"File does not exist: '${e.getFile}'")
