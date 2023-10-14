@@ -31,7 +31,6 @@ case class Context(
 	operands: List[ValueSource],
 	lastRegisterIndex: Int
 ) {
-	// TODO incorporate variable names into register names
 	def nextRegister: Register = Register(s"%r$lastRegisterIndex")
 
 	def pushVariable(name: String, source: ValueSource): Context =

@@ -1,23 +1,14 @@
 package backends.llvm
 
-import instant.Absyn.*
-
 import java.io.{File, FileWriter}
 
-case class LLVMFileWriter(fileWriter: FileWriter) {
-	def writeLine(line: String): Unit = {
-		fileWriter.write("\t\t")
-		fileWriter.write(line)
-		fileWriter.write("\n")
+object Backend extends backends.Backend {
+	private case class LLVMFileWriter(file: File) extends FileWriter(file) {
+		def writeLine(line: String): Unit = write(s"\t\t$line\n")
 	}
 
-	def close(): Unit = fileWriter.close()
-}
-
-object Backend extends backends.Backend {
-	override def compile(program: Program, fileName: String): Unit = {
-		val fileWriter: FileWriter = new FileWriter(new File(s"$fileName.ll"))
-		val mnemonicFileWriter = LLVMFileWriter(fileWriter)
+	override def compile(program: instant.Absyn.Program, fileName: String): Unit = {
+		val fileWriter: LLVMFileWriter = LLVMFileWriter(new File(s"$fileName.ll"))
 		try {
 			fileWriter.write(
 				s"""declare i32 @printf(i8*, ...)
@@ -30,58 +21,54 @@ object Backend extends backends.Backend {
 					 |\t\t%intFormatPtr = bitcast [4 x i8]* @intFormat to i8*
 					 |""".stripMargin
 			)
-			compile(program, Context.empty, mnemonicFileWriter)
+			compile(program, Context.empty, fileWriter)
 			fileWriter.write(
 				s"""\t\tret i32 0
 					 |}\n
 					 |""".stripMargin
 			)
 		} finally {
-			mnemonicFileWriter.close()
+			fileWriter.close()
 		}
 
 		scala.sys.process.Process(s"llvm-as $fileName.ll").!
 	}
 
-	private def compile(program: Program, context: Context, fileWriter: LLVMFileWriter): Context = program match {
-		case prog: Prog =>
-			val statements = prog.liststmt_.toArray(Array[Stmt]()).toSeq
-			statements.foldLeft(context){ (context, statement) => compile(statement, context, fileWriter) }
+	private def compile(program: instant.Absyn.Program, context: Context, fileWriter: LLVMFileWriter): Context = program match {
+		case prog: instant.Absyn.Prog =>
+			val statements = prog.liststmt_.toArray(Array[instant.Absyn.Stmt]()).toSeq
+			statements.foldLeft(context) { (context, statement) => compile(statement, context, fileWriter) }
 	}
 
-	private def compile(statement: Stmt, context: Context, fileWriter: LLVMFileWriter): Context = statement match {
-		case ass: SAss =>
-			val contextAfterExpression = compile(ass.exp_, context, fileWriter)
+	private def compile(statement: instant.Absyn.Stmt, context: Context, fileWriter: LLVMFileWriter): Context = statement match {
+		case ass: instant.Absyn.SAss =>
+			val contextAfterExpression = compile(translateBNFCExp(ass.exp_), context, fileWriter)
 			val (operandSource, contextBeforeAssignment) = contextAfterExpression.popOperand
 			contextBeforeAssignment.pushVariable(ass.ident_, operandSource)
-		case exp: SExp =>
-			val contextAfterExpression = compile(exp.exp_, context, fileWriter)
+		case exp: instant.Absyn.SExp =>
+			val contextAfterExpression = compile(translateBNFCExp(exp.exp_), context, fileWriter)
 			val (printedOperand, resultContext) = contextAfterExpression.popOperand
 			fileWriter.writeLine(s"call i32 (i8*, ...) @printf(i8* %intFormatPtr, i32 $printedOperand)")
 			resultContext
 	}
 
-	private type ExpOpType = ExpAdd | ExpSub | ExpMul | ExpDiv
-	private case class ExpOp(exp1: Exp, exp2: Exp, op: String)
-
-	private def translateOperation(operation: ExpOpType): ExpOp = operation match {
-		case op: ExpAdd => ExpOp(op.exp_1, op.exp_2, "add")
-		case op: ExpSub => ExpOp(op.exp_1, op.exp_2, "sub")
-		case op: ExpMul => ExpOp(op.exp_1, op.exp_2, "mul")
-		case op: ExpDiv => ExpOp(op.exp_1, op.exp_2, "sdiv")
+	private def opCode: Op => String = {
+		case Op.Add => "add"
+		case Op.Sub => "sub"
+		case Op.Mul => "mul"
+		case Op.Div => "sdiv"
 	}
 
 	private def compile(expression: Exp, context: Context, fileWriter: LLVMFileWriter): Context = expression match {
-		case lit: ExpLit => context.pushOperand(Constant(lit.integer_))
-		case vrr: ExpVar => context.pushOperand(context.variables(vrr.ident_))
-		case op: ExpOpType =>
-			val expOp = translateOperation(op)
-			val context1 = compile(expOp.exp1, context, fileWriter)
-			val context2 = compile(expOp.exp2, context1, fileWriter)
+		case ExpLit(value) => context.pushOperand(Constant(value))
+		case ExpVar(name) => context.pushOperand(context.variables(name))
+		case op: ExpOp =>
+			val context1 = compile(op.exp1, context, fileWriter)
+			val context2 = compile(op.exp2, context1, fileWriter)
 			val (operand2, context3) = context2.popOperand
 			val (operand1, context4) = context3.popOperand
 			val resultValueSource = context4.nextRegister
-			fileWriter.writeLine(s"$resultValueSource = ${expOp.op} i32 $operand1, $operand2")
+			fileWriter.writeLine(s"$resultValueSource = ${opCode(op.op)} i32 $operand1, $operand2")
 			context4.pushOperand(resultValueSource)
 	}
 }
