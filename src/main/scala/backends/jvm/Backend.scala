@@ -59,7 +59,7 @@ object Backend extends backends.Backend {
 		case op: ExpOp =>
 			val (height1, optimized1) = optimizeExp(op.exp1)
 			val (height2, optimized2) = optimizeExp(op.exp2)
-			if height1 >= height2 then (height1 + 2, op.copy(exp1 = optimized1, exp2 = optimized2)) else (height2, op.copy(exp1 = optimized2, exp2 = optimized1))
+			if height1 >= height2 then (height1 + 1, op.copy(exp1 = optimized1, exp2 = optimized2)) else (height2, op.copy(exp1 = optimized2, exp2 = optimized1, flipped = true))
 	}
 
 	private def compile(stmt: Stmt, locals: Map[String, Int], fileWriter: BackendFileWriter): Unit = {
@@ -77,9 +77,10 @@ object Backend extends backends.Backend {
 	private def compile(exp: Exp, locals: Map[String, Int], fileWriter: BackendFileWriter): Unit = exp match {
 		case ExpLit(value) => fileWriter.writeLine(constStr(value))
 		case ExpVar(name) => fileWriter.writeLine(loadStr(locals(name)))
-		case ExpOp(exp1, exp2, op) =>
+		case ExpOp(exp1, exp2, op, flipped) =>
 			compile(exp1, locals, fileWriter)
 			compile(exp2, locals, fileWriter)
+			if flipped && Seq(Op.Sub, Op.Div).contains(op) then fileWriter.writeLine("swap")
 			fileWriter.writeLine(opCode(op))
 	}
 

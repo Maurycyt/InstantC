@@ -11,7 +11,7 @@ trait Backend {
 	protected sealed trait ExpVal extends Exp
 	protected case class ExpLit(value: Int) extends ExpVal
 	protected case class ExpVar(name: String) extends ExpVal
-	protected case class ExpOp(exp1: Exp, exp2: Exp, op: Op) extends Exp
+	protected case class ExpOp(exp1: Exp, exp2: Exp, op: Op, flipped: Boolean = false) extends Exp
 
 	protected sealed trait Stmt(val exp: Exp)
 	protected case class SAss(name: String, override val exp: Exp) extends Stmt(exp)
