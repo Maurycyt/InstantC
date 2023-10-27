@@ -54,12 +54,18 @@ object Backend extends backends.Backend {
 		}
 	}
 
-	private def optimizeExp: Exp => (Int, Exp) = {
-		case value: ExpVal => (1, value)
-		case op: ExpOp =>
-			val (height1, optimized1) = optimizeExp(op.exp1)
-			val (height2, optimized2) = optimizeExp(op.exp2)
-			if height1 >= height2 then (height1 + 1, op.copy(exp1 = optimized1, exp2 = optimized2)) else (height2, op.copy(exp1 = optimized2, exp2 = optimized1, flipped = true))
+	private def optimizeExp(exp: Exp): (Int, Exp) = {
+		val result = exp match {
+			case value: ExpVal => (1, value)
+			case op: ExpOp =>
+				val (height1, optimized1) = optimizeExp(op.exp1)
+				val (height2, optimized2) = optimizeExp(op.exp2)
+				if height1 >= height2 then
+					(scala.math.max(height1, height2 + 1), op.copy(exp1 = optimized1, exp2 = optimized2))
+				else
+					(height2, op.copy(exp1 = optimized2, exp2 = optimized1, flipped = true))
+		}
+		result
 	}
 
 	private def compile(stmt: Stmt, locals: Map[String, Int], fileWriter: BackendFileWriter): Unit = {
@@ -91,8 +97,8 @@ object Backend extends backends.Backend {
 	private def constStr(value: Int) = value match {
 		case -1 => "iconst_m1"
 		case v if 0 <= v && v <= 5 => s"iconst_$v"
-		case v if -(1 << 7) <= v && v < (1 << 7) => "bipush " + v
-		case v if -(1 << 15) <= v && v < (1 << 15) => "sipush " + v
+		case v if -(1 << 7) <= v && v < (1 << 7) => s"bipush $v"
+		case v if -(1 << 15) <= v && v < (1 << 15) => s"sipush $v"
 		case v => "ldc " + v
 	}
 

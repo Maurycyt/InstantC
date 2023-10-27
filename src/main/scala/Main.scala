@@ -28,6 +28,8 @@ def main(target: String, inputPathString: String): Unit = {
 		case e: java.nio.file.NoSuchFileException =>
 			exitWithError(s"File does not exist: '${e.getFile}'")
 		case s: SyntaxError =>
-			exitWithError("")
+			exitWithError("Unexpected syntax error.")
+		case l: Lerser.LerserException =>
+			exitWithError(s"${l.getMessage}\n${l.cause}")
 	}
 }

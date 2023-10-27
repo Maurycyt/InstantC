@@ -10,6 +10,8 @@ import java.util
  * Combines the Lexer and the Parser.
  */
 object Lerser {
+	case class LerserException(msg: String, cause: Throwable) extends Exception(msg, cause)
+
 	case class SyntaxError(message: String, row: Int, column: Int) extends RuntimeException
 
 	object BNFCErrorListener extends ANTLRErrorListener {
@@ -24,11 +26,15 @@ object Lerser {
 	}
 	
 	def lerse(filePathString: String): Program = {
-		val l: instantLexer = new instantLexer(CharStreams.fromFileName(filePathString))
-		l.addErrorListener(BNFCErrorListener)
-		val p: instantParser = new instantParser(CommonTokenStream(l))
-		p.addErrorListener(BNFCErrorListener)
-		val pc: instantParser.Start_ProgramContext = p.start_Program
-		pc.result
+		try {
+			val l: instantLexer = new instantLexer(CharStreams.fromFileName(filePathString))
+			l.addErrorListener(BNFCErrorListener)
+			val p: instantParser = new instantParser(CommonTokenStream(l))
+			p.addErrorListener(BNFCErrorListener)
+			val pc: instantParser.Start_ProgramContext = p.start_Program
+			pc.result
+		} catch {
+			case so: StackOverflowError => throw LerserException("Could not parse the program due to error in ANTLR. This is probably a stack overflow error:", so)
+		}
 	}
 }
