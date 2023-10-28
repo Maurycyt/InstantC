@@ -1,14 +1,15 @@
 package backends.jvm
 
 import java.io.File
+import backends.Backend._
 
 object Backend extends backends.Backend {
-	override def compile(program: instant.Absyn.Program, fileBasePath: String): Unit = {
+	override def compile(program: Prog, fileBasePath: String): Unit = {
 		val fileBaseName = fileBasePath.reverse.takeWhile(_ != '/').reverse.takeWhile(_ != '.')
 		val fileDirectory = fileBasePath.reverse.dropWhile(_ != '/').reverse
 		val fileWriter = BackendFileWriter(new File(s"$fileBasePath.j"))
 		try {
-			val statements = getProgramStatements(program).map(optimizeStatement)
+			val statements = program.stmts.map(optimizeStatement)
 			val locals = statements.collect { case (_, SAss(name, _)) => name }.toSet.zipWithIndex.toMap
 			val localsLimit = scala.math.max(1, locals.size)
 			val stackLimit = (0 +: statements.map(_._1)).max
@@ -28,7 +29,7 @@ object Backend extends backends.Backend {
 					 |\t.limit stack $stackLimit
 					 |""".stripMargin)
 
-			statements.foreach { (_, stmt) => compile(stmt, locals, fileWriter) }
+			statements.foreach { case (_, stmt) => compile(stmt, locals, fileWriter) }
 
 			fileWriter.write(
 				s"""\treturn
@@ -60,7 +61,7 @@ object Backend extends backends.Backend {
 			case op: ExpOp =>
 				val (height1, optimized1) = optimizeExp(op.exp1)
 				val (height2, optimized2) = optimizeExp(op.exp2)
-				if height1 >= height2 then
+				if (height1 >= height2)
 					(scala.math.max(height1, height2 + 1), op.copy(exp1 = optimized1, exp2 = optimized2))
 				else
 					(height2, op.copy(exp1 = optimized2, exp2 = optimized1, flipped = true))
@@ -71,9 +72,9 @@ object Backend extends backends.Backend {
 	private def compile(stmt: Stmt, locals: Map[String, Int], fileWriter: BackendFileWriter): Unit = {
 		compile (stmt.exp, locals, fileWriter)
 		stmt match {
-			case SAss(name, exp) =>
+			case SAss(name, _) =>
 				fileWriter.writeLine(storeStr(locals(name)))
-			case SExp(exp) =>
+			case SExp(_) =>
 				fileWriter.writeLine("getstatic java/lang/System/out Ljava/io/PrintStream;")
 				fileWriter.writeLine("swap")
 				fileWriter.writeLine("invokevirtual java/io/PrintStream/println(I)V")
@@ -83,16 +84,16 @@ object Backend extends backends.Backend {
 	private def compile(exp: Exp, locals: Map[String, Int], fileWriter: BackendFileWriter): Unit = exp match {
 		case ExpLit(value) => fileWriter.writeLine(constStr(value))
 		case ExpVar(name) => fileWriter.writeLine(loadStr(locals(name)))
-		case ExpOp(exp1, exp2, op, flipped) =>
+		case ExpOp(op, exp1, exp2, flipped) =>
 			compile(exp1, locals, fileWriter)
 			compile(exp2, locals, fileWriter)
-			if flipped && Seq(Op.Sub, Op.Div).contains(op) then fileWriter.writeLine("swap")
+			if (flipped && Seq(Op.Sub, Op.Div).contains(op)) fileWriter.writeLine("swap")
 			fileWriter.writeLine(opCode(op))
 	}
 
-	private def storeStr(index: Int): String = "istore" + (if index <= 3 then "_" else " ") + index
+	private def storeStr(index: Int): String = "istore" + (if (index <= 3) "_" else " ") + index
 
-	private def loadStr(index: Int): String = "iload" + (if index <= 3 then "_" else " ") + index
+	private def loadStr(index: Int): String = "iload" + (if (index <= 3) "_" else " ") + index
 
 	private def constStr(value: Int) = value match {
 		case -1 => "iconst_m1"

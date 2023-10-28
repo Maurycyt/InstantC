@@ -1,9 +1,10 @@
 package backends.llvm
 
 import java.io.File
+import backends.Backend._
 
 object Backend extends backends.Backend {
-	override def compile(program: instant.Absyn.Program, fileBasePath: String): Unit = {
+	override def compile(program: Prog, fileBasePath: String): Unit = {
 		val fileWriter = BackendFileWriter(new File(s"$fileBasePath.ll"))
 		try {
 			fileWriter.write(
@@ -18,7 +19,7 @@ object Backend extends backends.Backend {
 					 |""".stripMargin
 			)
 
-			val statements = getProgramStatements(program)
+			val statements = program.stmts
 			statements.foldLeft(Context.empty) { (context, statement) => compile(statement, context, fileWriter) }
 
 			fileWriter.write(
