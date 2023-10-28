@@ -10,6 +10,7 @@ ${MAIN_CLASSPATH}Main.class:
 	make build
 
 src/grammar/LerseInstant: src/grammar/LerseInstant.hs
+	# The first BNFC path is the path on the university server where this assignment is to be graded.
 	/home/students/inf/PUBLIC/MRJP/bin/bnfc ${BNFC_FLAGS} || bnfc ${BNFC_FLAGS}
 	make -C ${BNFC_TARGET} LexInstant.hs *.hs
 	ghc -i${BNFC_TARGET} src/grammar/LerseInstant

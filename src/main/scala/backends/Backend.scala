@@ -2,7 +2,7 @@ package backends
 
 import java.io.{ File, FileWriter }
 import io.circe.generic.extras.auto._
-import io.circe.generic.extras.{Configuration, semiauto}
+import io.circe.generic.extras.{ Configuration, semiauto }
 import io.circe.Decoder
 
 trait Backend {
