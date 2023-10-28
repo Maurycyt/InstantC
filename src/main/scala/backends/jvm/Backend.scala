@@ -4,7 +4,7 @@ import java.io.File
 import backends.Backend._
 
 object Backend extends backends.Backend {
-	override def compile(program: Prog, fileBasePath: String): Unit = {
+	override def doCompile(program: Prog, fileBasePath: String): Unit = {
 		val fileBaseName = fileBasePath.reverse.takeWhile(_ != '/').reverse.takeWhile(_ != '.')
 		val fileDirectory = fileBasePath.reverse.dropWhile(_ != '/').reverse
 		val fileWriter = BackendFileWriter(new File(s"$fileBasePath.j"))

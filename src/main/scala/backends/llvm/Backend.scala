@@ -4,7 +4,7 @@ import java.io.File
 import backends.Backend._
 
 object Backend extends backends.Backend {
-	override def compile(program: Prog, fileBasePath: String): Unit = {
+	override def doCompile(program: Prog, fileBasePath: String): Unit = {
 		val fileWriter = BackendFileWriter(new File(s"$fileBasePath.ll"))
 		try {
 			fileWriter.write(

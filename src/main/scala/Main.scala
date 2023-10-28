@@ -28,6 +28,8 @@ object Main {
 		} catch {
 			case e: java.nio.file.NoSuchFileException =>
 				exitWithError(s"File does not exist: '${e.getFile}'")
+			case Backend.UndeclaredVariableException(name) =>
+				exitWithError(s"Undeclared variable: $name")
 		}
 	}
 }

@@ -1,12 +1,19 @@
 package backends
 
-import java.io.{ File, FileWriter }
+import backends.Backend.checkVars
+
+import java.io.{File, FileWriter}
 import io.circe.generic.extras.auto._
-import io.circe.generic.extras.{ Configuration, semiauto }
+import io.circe.generic.extras.{semiauto, Configuration}
 import io.circe.Decoder
 
 trait Backend {
-	def compile(program: Backend.Prog, fileBasePath: String): Unit
+	final def compile(program: Backend.Prog, fileBasePath: String): Unit = {
+		checkVars(program)
+		doCompile(program, fileBasePath)
+	}
+
+	protected def doCompile(program: Backend.Prog, fileBasePath: String): Unit
 }
 
 object Backend {
@@ -35,5 +42,25 @@ object Backend {
 
 	case class BackendFileWriter(file: File) extends FileWriter(file) {
 		def writeLine(line: String): Unit = write(s"\t$line\n")
+	}
+
+	case class UndeclaredVariableException(name: String) extends Exception
+
+	private def checkVars(program: Backend.Prog): Unit = {
+		// We only check for undeclared variables.
+		program.stmts.foldLeft(Set.empty[String]) { case (seenVars, stmt) =>
+			checkVars(seenVars, stmt.exp)
+			stmt match {
+				case SAss(name, _) => seenVars + name
+				case SExp(_) => seenVars
+			}
+		}
+	}
+
+	private def checkVars(seenVars: Set[String], exp: Exp): Unit = { exp match {
+			case ExpLit(_) => ()
+			case ExpVar(name) => if (!seenVars.contains(name)) throw UndeclaredVariableException(name) else ()
+			case ExpOp(_, exp1, exp2, _) => checkVars(seenVars, exp1); checkVars(seenVars, exp2)
+		}
 	}
 }
